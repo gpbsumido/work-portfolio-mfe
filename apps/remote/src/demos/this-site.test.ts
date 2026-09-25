@@ -3,14 +3,14 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const demo = readFileSync(
-  join(process.cwd(), "src/app/work-portfolio/demos/this-site.tsx"),
+  join(__dirname, "this-site.tsx"),
   "utf8",
 );
-const thumbsDir = join(process.cwd(), "public/work-portfolio/thumbs");
+const thumbsDir = join(__dirname, "thumbs");
 
 describe("this-site demo thumbnails", () => {
   it("shows a theme-matched screenshot for each link (light and dark)", () => {
-    expect(demo).toMatch(/-light\.png/);
+    expect(demo).toMatch(/shot\.light/);
     expect(demo).toMatch(/dark:hidden/);
     expect(demo).toMatch(/dark:block/);
   });

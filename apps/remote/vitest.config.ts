@@ -9,7 +9,7 @@ import pkg from "./package.json" with { type: "json" };
 //          only makes sense after `pnpm build`; CI runs it right after.
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  resolve: { alias: { "@": path.resolve(import.meta.dirname, "./src") } },
   define: { __REMOTE_VERSION__: JSON.stringify(pkg.version) },
   test: {
     projects: [

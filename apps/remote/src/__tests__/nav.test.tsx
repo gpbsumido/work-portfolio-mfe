@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import WorkPortfolioContent from "../WorkPortfolioContent";
 import { FEATURES } from "../_data/catalog";
@@ -106,31 +106,43 @@ describe("keyboard navigation", () => {
 });
 
 describe("deep links", () => {
-  it("?feature= selects that feature on load", async () => {
-    const slug = FEATURES[7].slug;
-    window.history.replaceState(null, "", `/work-portfolio?feature=${slug}`);
-    render(<WorkPortfolioContent />);
-    // the deep-link read applies on a microtask, so wait for it
+  // The host reads ?feature= and writes it back; this component only takes the
+  // slug in and reports changes out, so that is what these pin.
+  it("a slug from the host selects that feature on load", () => {
+    render(<WorkPortfolioContent initialFeature={FEATURES[7].slug} />);
     expect(
-      await screen.findByRole("heading", { name: FEATURES[7].title }),
+      screen.getByRole("heading", { name: FEATURES[7].title }),
     ).toBeInTheDocument();
-    window.history.replaceState(null, "", "/work-portfolio");
   });
 
   it("an unknown slug leaves the intro card up", () => {
-    window.history.replaceState(null, "", "/work-portfolio?feature=nope");
-    render(<WorkPortfolioContent />);
+    render(<WorkPortfolioContent initialFeature="nope" />);
     expect(
       screen.queryByRole("heading", { name: FEATURES[0].title }),
     ).toBeNull();
-    window.history.replaceState(null, "", "/work-portfolio");
   });
 
-  it("selection writes the slug back to the URL", () => {
-    window.history.replaceState(null, "", "/work-portfolio");
-    render(<WorkPortfolioContent />);
+  it("selection reports the slug back to the host", () => {
+    const onFeatureChange = vi.fn();
+    render(<WorkPortfolioContent onFeatureChange={onFeatureChange} />);
     fireEvent.click(screen.getByRole("button", { name: "Next feature" }));
-    expect(window.location.search).toBe(`?feature=${FEATURES[0].slug}`);
-    window.history.replaceState(null, "", "/work-portfolio");
+    expect(onFeatureChange).toHaveBeenLastCalledWith(FEATURES[0].slug);
+  });
+
+  it("going back to the intro reports null", () => {
+    const onFeatureChange = vi.fn();
+    const { rerender } = render(
+      <WorkPortfolioContent
+        initialFeature={FEATURES[0].slug}
+        onFeatureChange={onFeatureChange}
+      />,
+    );
+    rerender(
+      <WorkPortfolioContent
+        initialFeature={null}
+        onFeatureChange={onFeatureChange}
+      />,
+    );
+    expect(onFeatureChange).toHaveBeenLastCalledWith(null);
   });
 });

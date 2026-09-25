@@ -13,7 +13,9 @@ const hostContext = (overrides: Partial<HostContext> = {}): HostContext => ({
   ...overrides,
 });
 
-/** Mounts into a detached-then-attached element, the way the host does. */
+const mounted: Array<{ el: HTMLElement; handle: ReturnType<typeof mount> }> = [];
+
+/** Mounts into an element on the page, the way the host does. */
 const mountInto = (ctx: HostContext) => {
   const el = document.createElement("div");
   document.body.appendChild(el);
@@ -21,11 +23,17 @@ const mountInto = (ctx: HostContext) => {
   act(() => {
     handle = mount(el, ctx);
   });
+  mounted.push({ el, handle });
   return { el, handle };
 };
 
+// Unmount before removing the element, the same order the host uses, so a
+// lazy demo resolving late never commits into a detached node.
 afterEach(() => {
-  document.body.innerHTML = "";
+  mounted.splice(0).forEach(({ el, handle }) => {
+    act(() => handle.unmount());
+    el.remove();
+  });
   vi.restoreAllMocks();
 });
 
@@ -78,6 +86,7 @@ describe("mount", () => {
     const { el, handle } = mountInto(hostContext({ onFeatureChange }));
 
     act(() => handle.unmount());
+    mounted.splice(mounted.findIndex((m) => m.handle === handle), 1);
     onFeatureChange.mockClear();
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight" }));
 

@@ -1,10 +1,8 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { axe } from "vitest-axe";
 import WorkPortfolioContent from "../WorkPortfolioContent";
 import { FEATURES, projectFor } from "../_data/catalog";
-
-beforeEach(() => window.history.replaceState(null, "", "/work-portfolio"));
 
 describe("work-portfolio accessibility", () => {
   it("has no axe violations on the intro state", async () => {
@@ -13,12 +11,10 @@ describe("work-portfolio accessibility", () => {
   }, 30000);
 
   it("has no axe violations with a demo selected", async () => {
-    window.history.replaceState(
-      null,
-      "",
-      "/work-portfolio?feature=realtime-metrics",
+    const { container } = render(
+      <WorkPortfolioContent initialFeature="realtime-metrics" />,
     );
-    const { container } = render(<WorkPortfolioContent />);
+    await screen.findByTestId("signup-count");
     expect(await axe(container)).toHaveNoViolations();
   }, 30000);
 

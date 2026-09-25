@@ -53,7 +53,9 @@ export type CreateReferralInput = {
 /**
  * Capabilities the host lends the remote. The remote never learns an API URL
  * or touches auth: it asks for data through these and the host decides how to
- * fetch it. Rejections carry a user-facing message.
+ * fetch it. An API refusal rejects with an Error whose message is fit to show
+ * a user; an unreachable API rejects with a TypeError, the way fetch does, so
+ * the remote can tell "no" apart from "offline".
  */
 export type HostServices = {
   referrals: {

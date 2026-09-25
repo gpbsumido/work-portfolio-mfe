@@ -1,36 +1,40 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CatalogSchema } from "@paul-portfolio/work-portfolio-contract";
 import { globalSelectors } from "../scripts/cssScope";
 
-const DIST = join(__dirname, "../dist");
-const CSS_DIR = join(DIST, "static/css");
+const DIST = join(import.meta.dirname, "../dist");
 
-/** Every stylesheet the build emitted, async chunks included. */
-const cssFiles = (dir: string): string[] =>
-  existsSync(dir)
-    ? readdirSync(dir, { recursive: true, encoding: "utf8" })
-        .filter((f) => f.endsWith(".css"))
-        .map((f) => join(dir, f))
-    : [];
+type Manifest = {
+  name: string;
+  exposes: {
+    path: string;
+    assets: { css: { sync: string[]; async: string[] } };
+  }[];
+};
+
+const manifest = (): Manifest =>
+  JSON.parse(readFileSync(join(DIST, "mf-manifest.json"), "utf8"));
 
 /**
- * RainbowKit's stylesheet ships inside the nft-inventory chunk and resets
- * elements under its own [data-rk] root. That is scoped, just not by class,
- * so its file is checked for the attribute instead of skipped outright.
+ * The stylesheets the host actually pulls in: whatever the manifest attaches
+ * to ./mount, sync and async. The standalone page's own CSS (index.*.css) is
+ * deliberately global, since there it plays host, and never reaches the host.
  */
-const isRainbowKit = (css: string) => css.includes("[data-rk]");
+const mountCss = (): string[] => {
+  const mount = manifest().exposes.find((e) => e.path === "./mount");
+  return mount ? [...mount.assets.css.sync, ...mount.assets.css.async] : [];
+};
 
 describe("built output", () => {
-  it("emitted at least one stylesheet (so the check below can fail)", () => {
-    expect(cssFiles(CSS_DIR).length).toBeGreaterThan(0);
+  it("attaches at least one stylesheet to ./mount (so the check below can fail)", () => {
+    expect(mountCss().length).toBeGreaterThan(0);
   });
 
-  it("ships no CSS that styles the host page outside the remote", () => {
-    const leaks = cssFiles(CSS_DIR)
-      .map((file) => readFileSync(file, "utf8"))
-      .filter((css) => !isRainbowKit(css))
+  it("ships no CSS to the host that styles the page outside the remote", () => {
+    const leaks = mountCss()
+      .map((file) => readFileSync(join(DIST, file), "utf8"))
       .flatMap(globalSelectors);
     expect(leaks).toEqual([]);
   });
@@ -41,12 +45,7 @@ describe("built output", () => {
   });
 
   it("serves the federation manifest the host loads", () => {
-    const manifest = JSON.parse(
-      readFileSync(join(DIST, "mf-manifest.json"), "utf8"),
-    );
-    expect(manifest.name).toBe("workPortfolio");
-    expect(manifest.exposes.map((e: { path: string }) => e.path)).toContain(
-      "./mount",
-    );
+    expect(manifest().name).toBe("workPortfolio");
+    expect(manifest().exposes.map((e) => e.path)).toContain("./mount");
   });
 });

@@ -125,7 +125,11 @@ export default function RealtimeMetricsDemo({
         ))}
       </div>
 
-      <div className="min-h-40 flex-1" aria-label="Signups per minute chart">
+      <div
+        className="min-h-40 flex-1"
+        role="img"
+        aria-label="Signups per minute chart"
+      >
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
             data={data}

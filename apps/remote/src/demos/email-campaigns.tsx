@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Button from "@/components/ui/Button";
 import type { WorkFeature } from "../_data/types";
 
@@ -86,16 +85,13 @@ function EditableBlock({
       return (
         <div className="space-y-1">
           {block.src ? (
-            // A locally-imported data URL, so unoptimized (nothing for the
-            // Next image optimizer to do); fill matches the fixed-height block.
+            // A locally-imported data URL, absolutely filled so it matches the
+            // fixed-height block.
             <div className="relative h-16 w-full overflow-hidden rounded-md">
-              <Image
+              <img
                 src={block.src}
                 alt="email banner"
-                fill
-                unoptimized
-                sizes="100vw"
-                className="object-cover"
+                className="absolute inset-0 h-full w-full object-cover"
               />
             </div>
           ) : (
