@@ -2,8 +2,24 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["vitest/globals", "@testing-library/jest-dom"],
-    "paths": { "@/*": ["./src/*"] }
+    "types": [
+      "vitest/globals",
+      "@testing-library/jest-dom"
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    }
   },
-  "include": ["src", "dev", "e2e", "scripts", "*.ts", "env.d.ts"]
+  "include": [
+    "src",
+    "dev",
+    "e2e",
+    "harness",
+    "scripts",
+    "dist-checks",
+    "*.ts",
+    "env.d.ts"
+  ]
 }

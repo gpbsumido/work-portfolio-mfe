@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit",
     "test:dist": "vitest run --project dist",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "build:harness": "rsbuild build -c rsbuild.harness.config.ts",
+    "preview:harness": "rsbuild preview -c rsbuild.harness.config.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
