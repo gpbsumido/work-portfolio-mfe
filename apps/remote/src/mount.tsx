@@ -9,6 +9,7 @@ import {
 } from "@paul-portfolio/work-portfolio-contract";
 import WorkPortfolioContent from "./WorkPortfolioContent";
 import { HostServicesProvider } from "./services";
+import { REMOTE_SCOPE } from "./scope";
 
 /** The contract major this build was compiled against. The host checks it before mounting. */
 export const contractVersion = CONTRACT_VERSION;
@@ -40,10 +41,13 @@ export function mount(el: HTMLElement, ctx: HostContext): MountHandle {
       <QueryClientProvider client={queryClient}>
         <HostServicesProvider services={current.services}>
           <LazyMotion features={loadMotionFeatures}>
-            <WorkPortfolioContent
-              initialFeature={current.initialFeature}
-              onFeatureChange={current.onFeatureChange}
-            />
+            {/* the scope root: the remote's CSS only applies in here */}
+            <div className={`${REMOTE_SCOPE} flex min-h-0 flex-1 flex-col`}>
+              <WorkPortfolioContent
+                initialFeature={current.initialFeature}
+                onFeatureChange={current.onFeatureChange}
+              />
+            </div>
           </LazyMotion>
         </HostServicesProvider>
       </QueryClientProvider>,

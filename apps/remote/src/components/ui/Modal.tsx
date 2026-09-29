@@ -2,6 +2,7 @@
 
 import { type ReactNode } from "react";
 import { Modal as PaulModal } from "@paul-portfolio/react";
+import { REMOTE_SCOPE } from "@/scope";
 
 interface ModalProps {
   /** Whether the modal is open */
@@ -27,9 +28,17 @@ interface ModalProps {
  * directly when no title is given — plus its own focus trap, scroll lock, and
  * the dvh mobile-fit fix. So this now delegates, and every existing call site
  * keeps working unchanged.
+ *
+ * It portals to <body>, outside the mount root, so it carries the remote's
+ * scope class or none of the demo styling inside it would apply.
  */
-export default function Modal(props: ModalProps) {
-  return <PaulModal {...props} />;
+export default function Modal({ className, ...props }: ModalProps) {
+  return (
+    <PaulModal
+      {...props}
+      className={className ? `${REMOTE_SCOPE} ${className}` : REMOTE_SCOPE}
+    />
+  );
 }
 
 Modal.Header = PaulModal.Header;

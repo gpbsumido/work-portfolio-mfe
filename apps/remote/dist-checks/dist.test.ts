@@ -2,7 +2,9 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { CatalogSchema } from "@paul-portfolio/work-portfolio-contract";
+import postcss from "postcss";
 import { globalSelectors } from "../scripts/cssScope";
+import { REMOTE_SCOPE } from "../src/scope";
 
 const DIST = join(import.meta.dirname, "../dist");
 
@@ -37,6 +39,27 @@ describe("built output", () => {
       .map((file) => readFileSync(join(DIST, file), "utf8"))
       .flatMap(globalSelectors);
     expect(leaks).toEqual([]);
+  });
+
+  it("confines every rule it ships to the host to the remote's scope class", () => {
+    const unscoped = mountCss()
+      .map((file) => readFileSync(join(DIST, file), "utf8"))
+      .flatMap((css) =>
+        postcss.parse(css).nodes.flatMap(function walk(node): string[] {
+          if (node.type === "atrule") {
+            return /keyframes$/i.test(node.name) ? [] : (node.nodes ?? []).flatMap(walk);
+          }
+          if (node.type !== "rule") return [];
+          const onlyTwVars = node.nodes.every(
+            (d) => d.type === "decl" && d.prop.startsWith("--tw-"),
+          );
+          return onlyTwVars || node.selector.includes(`.${REMOTE_SCOPE}`)
+            ? []
+            : [node.selector];
+        }),
+      );
+    // RainbowKit's stylesheet is scoped by its own [data-rk] root instead
+    expect(unscoped.filter((s) => !s.includes("[data-rk]"))).toEqual([]);
   });
 
   it("serves a catalog.json that parses against the contract", () => {
