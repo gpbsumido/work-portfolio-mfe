@@ -1,4 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
+  // Published and loaded by Node as well as bundlers, so resolve like Node:
+  // NodeNext makes relative imports spell out ".js", which Node ESM requires.
+  "compilerOptions": { "module": "NodeNext", "moduleResolution": "NodeNext" },
   "include": ["src"]
 }

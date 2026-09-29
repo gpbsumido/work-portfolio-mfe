@@ -4,7 +4,7 @@ import {
   CatalogSchema,
   isCompatibleContract,
   type Catalog,
-} from "./index";
+} from "./index.js";
 
 const project = (overrides: Partial<Catalog["projects"][number]> = {}) => ({
   id: "atlas",

@@ -13,7 +13,7 @@ export {
   type WorkProject,
   type WorkFeature,
   type Catalog,
-} from "./catalog";
+} from "./catalog.js";
 
 /**
  * The contract's major version. The host refuses a remote built against a
