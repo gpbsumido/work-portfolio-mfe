@@ -1,7 +1,6 @@
 "use client";
 
-import type { ComponentType } from "react";
-import dynamic from "next/dynamic";
+import { lazy, Suspense, type ComponentType } from "react";
 import { FEATURES } from "../_data/catalog";
 import type { WorkFeature } from "../_data/types";
 import ComingSoonDemo from "./ComingSoonDemo";
@@ -10,87 +9,61 @@ import DemoSkeleton from "./DemoSkeleton";
 export type DemoComponent = ComponentType<{ feature: WorkFeature }>;
 
 /**
+ * A demo behind React.lazy, with the skeleton while its chunk loads. Built
+ * once at module scope, so the component identity never changes between
+ * renders and a demo never remounts just because the stage re-rendered.
+ */
+function lazyDemo(
+  load: () => Promise<{ default: DemoComponent }>,
+): DemoComponent {
+  const Lazy = lazy(load);
+  return function LazyDemo(props) {
+    return (
+      <Suspense fallback={<DemoSkeleton />}>
+        <Lazy {...props} />
+      </Suspense>
+    );
+  };
+}
+
+/**
  * Real demos, one line per shipped demo. Each lives in its own file behind
- * next/dynamic so the page only ships the chunk for the demo on screen.
+ * React.lazy so the page only ships the chunk for the demo on screen.
  * Demo PRs add exactly one line here each, which keeps them independent.
  */
 const SHIPPED: Partial<Record<string, DemoComponent>> = {
-  "realtime-metrics": dynamic(() => import("./realtime-metrics"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "chart-library": dynamic(() => import("./chart-library"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "standard-analytics": dynamic(() => import("./standard-analytics"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "per-game-analytics": dynamic(() => import("./per-game-analytics"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "slug-dashboards": dynamic(() => import("./slug-dashboards"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "dashboard-designer": dynamic(() => import("./dashboard-designer"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "wallet-lookup": dynamic(() => import("./wallet-lookup"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "llm-assistant": dynamic(() => import("./llm-assistant"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "email-campaigns": dynamic(() => import("./email-campaigns"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "workflow-editor": dynamic(() => import("./workflow-editor"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "signup-flow": dynamic(() => import("./signup-flow"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "admin-suite": dynamic(() => import("./admin-suite"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "ai-content-engine": dynamic(() => import("./ai-content-engine"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "ua-campaign-builder": dynamic(() => import("./ua-campaign-builder"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "referral-links": dynamic(() => import("./referral-links"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "auth-flows": dynamic(() => import("./auth-flows"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "campaign-manager": dynamic(() => import("./campaign-manager"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "post-queue": dynamic(() => import("./post-queue"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "community-mode": dynamic(() => import("./community-mode"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "character-sheets": dynamic(() => import("./character-sheets"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "game-demo": dynamic(() => import("./game-demo"), {
-    loading: () => <DemoSkeleton />,
-  }),
-  "nft-inventory": dynamic(() => import("./nft-inventory"), {
-    loading: () => <DemoSkeleton />,
-    ssr: false,
-  }),
-  "this-site": dynamic(() => import("./this-site"), {
-    loading: () => <DemoSkeleton />,
-  }),
+  "realtime-metrics": lazyDemo(() => import("./realtime-metrics")),
+  "chart-library": lazyDemo(() => import("./chart-library")),
+  "standard-analytics": lazyDemo(() => import("./standard-analytics")),
+  "per-game-analytics": lazyDemo(() => import("./per-game-analytics")),
+  "slug-dashboards": lazyDemo(() => import("./slug-dashboards")),
+  "dashboard-designer": lazyDemo(() => import("./dashboard-designer")),
+  "wallet-lookup": lazyDemo(() => import("./wallet-lookup")),
+  "llm-assistant": lazyDemo(() => import("./llm-assistant")),
+  "email-campaigns": lazyDemo(() => import("./email-campaigns")),
+  "workflow-editor": lazyDemo(() => import("./workflow-editor")),
+  "signup-flow": lazyDemo(() => import("./signup-flow")),
+  "admin-suite": lazyDemo(() => import("./admin-suite")),
+  "ai-content-engine": lazyDemo(() => import("./ai-content-engine")),
+  "ua-campaign-builder": lazyDemo(() => import("./ua-campaign-builder")),
+  "referral-links": lazyDemo(() => import("./referral-links")),
+  "auth-flows": lazyDemo(() => import("./auth-flows")),
+  "campaign-manager": lazyDemo(() => import("./campaign-manager")),
+  "post-queue": lazyDemo(() => import("./post-queue")),
+  "community-mode": lazyDemo(() => import("./community-mode")),
+  "character-sheets": lazyDemo(() => import("./character-sheets")),
+  "game-demo": lazyDemo(() => import("./game-demo")),
+  "nft-inventory": lazyDemo(() => import("./nft-inventory")),
+  "this-site": lazyDemo(() => import("./this-site")),
 };
 
 /**
  * Every slug resolved up front, coming-soon placeholder where no demo has
  * shipped yet. Built at module scope so render code does a plain lookup.
  */
+/** Slugs with a real demo behind them, as opposed to the coming-soon card. */
+export const DEMO_SLUGS: readonly string[] = Object.keys(SHIPPED);
+
 export const DEMO_BY_SLUG: Record<string, DemoComponent> = Object.fromEntries(
   FEATURES.map((f) => [f.slug, SHIPPED[f.slug] ?? ComingSoonDemo]),
 );

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, screen, act } from "@testing-library/react";
 import WorkPortfolioContent from "../WorkPortfolioContent";
 import RealtimeMetricsDemo from "../demos/realtime-metrics";
@@ -11,7 +11,6 @@ import {
   featureIndexBySlug,
 } from "../_data/catalog";
 
-beforeEach(() => window.history.replaceState(null, "", "/work-portfolio"));
 afterEach(() => vi.useRealTimers());
 
 describe("demo stage", () => {
@@ -22,13 +21,8 @@ describe("demo stage", () => {
   });
 
   it("the reference demo is wired through the registry", async () => {
-    window.history.replaceState(
-      null,
-      "",
-      "/work-portfolio?feature=realtime-metrics",
-    );
-    render(<WorkPortfolioContent />);
-    // next/dynamic resolves async, so wait for the real demo
+    render(<WorkPortfolioContent initialFeature="realtime-metrics" />);
+    // React.lazy resolves async, so wait for the real demo
     expect(await screen.findByTestId("signup-count")).toBeInTheDocument();
   });
 

@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Build the remote
+        run: pnpm --filter work-portfolio-remote build
+      # CSS scope, catalog.json and manifest, checked against what was built
+      - name: Check the built output
+        run: pnpm --filter work-portfolio-remote test:dist
+
+      # Mount the built remote from a separate stand-in host over Module
+      # Federation, the way paul-explore does, so an unmountable remote fails
+      # here instead of on the site
+      - name: Build the host harness
+        run: pnpm --filter work-portfolio-remote build:harness
+      - name: Install Chromium
+        run: pnpm --filter work-portfolio-remote exec playwright install --with-deps chromium
+      - name: Host-harness e2e
+        run: pnpm test:e2e
+        env:
+          CI: "true"

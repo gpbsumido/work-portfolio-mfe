@@ -17,12 +17,36 @@ import ExplainerWindow, { type ExplainerSubject } from "./ExplainerWindow";
 import DemoStage from "./DemoStage";
 import IconButton from "@/components/ui/IconButton";
 
+/** Index of a slug in the catalog, or null for no slug or one that isn't there. */
+const indexFor = (slug: string | null): number | null =>
+  slug === null ? null : featureIndexBySlug(slug);
+
 /**
  * Client shell for the work-portfolio page. Owns the single piece of state,
  * the selected feature index (null means the intro card is showing).
+ *
+ * It no longer touches the URL. The host owns routing: it passes the slug
+ * from ?feature= in as `initialFeature` and gets every selection change back
+ * through `onFeatureChange`, then decides what the address bar says.
  */
-export default function WorkPortfolioContent() {
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+export default function WorkPortfolioContent({
+  initialFeature = null,
+  onFeatureChange,
+}: {
+  initialFeature?: string | null;
+  onFeatureChange?: (slug: string | null) => void;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(() =>
+    indexFor(initialFeature),
+  );
+  // The host can hand over a new starting feature while mounted (mount's
+  // update). Adjusting state during render, keyed on the prop, keeps that out
+  // of an effect: https://react.dev/learn/you-might-not-need-an-effect
+  const [seenInitial, setSeenInitial] = useState(initialFeature);
+  if (initialFeature !== seenInitial) {
+    setSeenInitial(initialFeature);
+    setSelectedIndex(indexFor(initialFeature));
+  }
   const [explainer, setExplainer] = useState<{
     subject: ExplainerSubject;
     edge: "top" | "bottom";
@@ -56,26 +80,16 @@ export default function WorkPortfolioContent() {
   const step = (dir: 1 | -1) =>
     setSelectedIndex((current) => cycleIndex(current, dir, FEATURES.length));
 
-  // ?feature=<slug> deep-links straight to a demo. Read once on mount;
-  // unknown slugs just leave the intro card up.
+  // Tell the host every time the selection moves, so it can keep the URL
+  // shareable. The ref keeps a new callback identity from re-announcing.
+  const announce = useRef(onFeatureChange);
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("feature");
-    if (!slug) return;
-    const index = featureIndexBySlug(slug);
-    // microtask defer keeps the effect from setting state synchronously
-    if (index !== null) queueMicrotask(() => setSelectedIndex(index));
-  }, []);
-
-  // Keep the URL shareable as the selection moves, without history spam.
+    announce.current = onFeatureChange;
+  });
   useEffect(() => {
-    const url = new URL(window.location.href);
-    if (selectedIndex === null) {
-      if (!url.searchParams.has("feature")) return;
-      url.searchParams.delete("feature");
-    } else {
-      url.searchParams.set("feature", FEATURES[selectedIndex].slug);
-    }
-    window.history.replaceState(null, "", url);
+    announce.current?.(
+      selectedIndex === null ? null : FEATURES[selectedIndex].slug,
+    );
   }, [selectedIndex]);
 
   // Keyboard arrows drive the same cycle. Skipped while typing in a form

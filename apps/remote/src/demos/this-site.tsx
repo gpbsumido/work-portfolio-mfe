@@ -1,7 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import Image from "next/image";
+import { THUMBS } from "./thumbs";
 import type { WorkFeature } from "../_data/types";
 
 const ACCENT = "var(--wp-accent, #cf9a3f)";
@@ -15,55 +14,55 @@ const ACCENT = "var(--wp-accent, #cf9a3f)";
 const LINKS = [
   {
     href: "/operator",
-    shot: "/work-portfolio/thumbs/operator.png",
+    shot: THUMBS["operator"],
     name: "Operator Dashboard",
     blurb: "The admin console behind the site: feature flags, updates, and ops.",
   },
   {
     href: "/world",
-    shot: "/work-portfolio/thumbs/world.png",
+    shot: THUMBS["world"],
     name: "The 3D World",
     blurb: "An explorable low-poly world rendered with React Three Fiber.",
   },
   {
     href: "/thoughts",
-    shot: "/work-portfolio/thumbs/thoughts.png",
+    shot: THUMBS["thoughts"],
     name: "Dev Thoughts",
     blurb: "Write-ups on how each feature was built, the wrong turns included.",
   },
   {
     href: "/pokemon",
-    shot: "/work-portfolio/thumbs/pokemon.png",
+    shot: THUMBS["pokemon"],
     name: "Pokémon TCG",
     blurb: "A card and set browser over a live trading-card API.",
   },
   {
     href: "/fantasy/nba",
-    shot: "/work-portfolio/thumbs/fantasy.png",
+    shot: THUMBS["fantasy"],
     name: "Fantasy & NBA",
     blurb: "Fantasy league history and NBA stats pulled from real feeds.",
   },
   {
     href: "/zeroproof",
-    shot: "/work-portfolio/thumbs/zeroproof.png",
+    shot: THUMBS["zeroproof"],
     name: "ZeroProof",
     blurb: "A no-loss betting tracker with bankroll trends and a board.",
   },
   {
     href: "/vitals",
-    shot: "/work-portfolio/thumbs/vitals.png",
+    shot: THUMBS["vitals"],
     name: "Core Web Vitals",
     blurb: "Real field performance for this site, measured and charted.",
   },
   {
     href: "/updates",
-    shot: "/work-portfolio/thumbs/updates.png",
+    shot: THUMBS["updates"],
     name: "Updates Feed",
     blurb: "A running changelog of what shipped, release by release.",
   },
   {
     href: "/design-system",
-    shot: "/work-portfolio/thumbs/design-system.png",
+    shot: THUMBS["design-system"],
     name: "Design System",
     blurb: "The component library and tokens the whole site is built from.",
   },
@@ -88,7 +87,7 @@ export default function ThisSiteDemo({ feature }: { feature: WorkFeature }) {
       <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {LINKS.map((l) => (
           <li key={l.href}>
-            <Link
+            <a
               href={l.href}
               className="group block overflow-hidden rounded-xl border border-border bg-background/40 transition-colors hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2"
               style={
@@ -101,19 +100,17 @@ export default function ThisSiteDemo({ feature }: { feature: WorkFeature }) {
                   visitor is actually looking at. Each is display:none in the
                   other theme, so only the active one lazy-loads. */}
               <span className="relative block aspect-[16/10] overflow-hidden bg-surface">
-                <Image
-                  src={l.shot.replace(/\.png$/, "-light.png")}
+                <img
+                  src={l.shot.light}
                   alt={`Screenshot of the ${l.name} page`}
-                  fill
-                  sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw"
-                  className="object-cover object-top transition-transform duration-300 group-hover:scale-105 dark:hidden"
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105 dark:hidden"
                 />
-                <Image
-                  src={l.shot}
+                <img
+                  src={l.shot.dark}
                   alt={`Screenshot of the ${l.name} page`}
-                  fill
-                  sizes="(min-width: 1024px) 20rem, (min-width: 640px) 45vw, 90vw"
-                  className="hidden object-cover object-top transition-transform duration-300 group-hover:scale-105 dark:block"
+                  loading="lazy"
+                  className="absolute inset-0 hidden h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105 dark:block"
                 />
               </span>
               <span className="flex items-start justify-between gap-2 p-3">
@@ -133,7 +130,7 @@ export default function ThisSiteDemo({ feature }: { feature: WorkFeature }) {
                   →
                 </span>
               </span>
-            </Link>
+            </a>
           </li>
         ))}
       </ul>
