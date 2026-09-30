@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.0.0 — September 25, 2026
+## 1.0.0 — September 30, 2026
 
 The work portfolio moves out of paul-explore into its own repo.
 
