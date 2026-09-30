@@ -1,40 +1,44 @@
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import type {
+  HostServices,
+  ReferralStats,
+} from "@paul-portfolio/work-portfolio-contract";
 import ReferralLinksDemo from "../referral-links";
 import { FEATURES, featureIndexBySlug } from "../../_data/catalog";
+import { HostServicesProvider } from "../../services";
 
 const feature = FEATURES[featureIndexBySlug("referral-links")!];
 
-function jsonRes(status: number, body: unknown) {
+/**
+ * The demo talks to the host's referrals service, never to fetch, so the
+ * tests hand it one. Each method can be swapped per test.
+ */
+function referralsService(
+  overrides: Partial<HostServices["referrals"]> = {},
+): HostServices {
   return {
-    ok: status >= 200 && status < 300,
-    status,
-    json: () => Promise.resolve(body),
+    referrals: {
+      create: vi.fn().mockResolvedValue(CREATED),
+      stats: vi.fn().mockResolvedValue(statsWith(0)),
+      recordClick: vi.fn().mockResolvedValue({ slug: "abc123", clicks: 1 }),
+      ...overrides,
+    },
   };
 }
 
-function mockFetch(status: number, body: unknown) {
-  const fn = vi.fn().mockResolvedValue(jsonRes(status, body));
-  vi.stubGlobal("fetch", fn);
-  return fn;
-}
+const statsWith = (clicks: number): ReferralStats => ({
+  slug: "abc123",
+  targetPath: "/work-portfolio",
+  clicks,
+  recent: Array.from({ length: Math.min(clicks, 2) }, (_, i) => ({
+    at: `2026-07-20T0${i + 1}:00:00.000Z`,
+  })),
+});
 
-/** Route create (POST) and stats (GET .../stats) to different fixtures. */
-function mockApi({ created, stats }: { created: unknown; stats: unknown }) {
-  const fn = vi.fn().mockImplementation((url: unknown) => {
-    if (String(url).endsWith("/stats"))
-      return Promise.resolve(jsonRes(200, stats));
-    return Promise.resolve(jsonRes(201, created));
-  });
-  vi.stubGlobal("fetch", fn);
-  return fn;
-}
-
-afterEach(() => vi.unstubAllGlobals());
-
-function renderWithClient(ui: ReactNode) {
+function renderWithClient(ui: ReactNode, services = referralsService()) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -42,7 +46,9 @@ function renderWithClient(ui: ReactNode) {
     },
   });
   return render(
-    <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
+    <QueryClientProvider client={client}>
+      <HostServicesProvider services={services}>{ui}</HostServicesProvider>
+    </QueryClientProvider>,
   );
 }
 
@@ -57,23 +63,26 @@ const CREATED = {
 
 describe("referral links demo", () => {
   it("creates a real referral link and renders the returned url", async () => {
-    const fetchMock = mockFetch(201, CREATED);
-    renderWithClient(<ReferralLinksDemo feature={feature} />);
+    const services = referralsService();
+    renderWithClient(<ReferralLinksDemo feature={feature} />, services);
 
     fireEvent.click(screen.getByRole("button", { name: /create link/i }));
 
     // The link is shown on the current origin (so a develop link opens develop),
     // with the path from the API preserved.
     expect(await screen.findByText(/\/r\/abc123/)).toBeInTheDocument();
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(String(url)).toMatch(/\/api\/referrals$/);
-    expect(init.method).toBe("POST");
+    expect(services.referrals.create).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: undefined }),
+    );
   });
 
   it("falls back to a local preview link on the current origin when the API is unreachable", async () => {
-    const fn = vi.fn().mockRejectedValue(new TypeError("Failed to fetch"));
-    vi.stubGlobal("fetch", fn);
-    renderWithClient(<ReferralLinksDemo feature={feature} />);
+    renderWithClient(
+      <ReferralLinksDemo feature={feature} />,
+      referralsService({
+        create: vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
+      }),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /create link/i }));
 
@@ -87,8 +96,12 @@ describe("referral links demo", () => {
   });
 
   it("surfaces a taken slug as a friendly error", async () => {
-    mockFetch(409, { error: "ConflictError" });
-    renderWithClient(<ReferralLinksDemo feature={feature} />);
+    renderWithClient(
+      <ReferralLinksDemo feature={feature} />,
+      referralsService({
+        create: vi.fn().mockRejectedValue(new Error("That slug is already taken.")),
+      }),
+    );
 
     fireEvent.change(screen.getByLabelText(/custom slug/i), {
       target: { value: "taken" },
@@ -99,19 +112,10 @@ describe("referral links demo", () => {
   });
 
   it("shows real click stats for the created link", async () => {
-    mockApi({
-      created: CREATED,
-      stats: {
-        slug: "abc123",
-        targetPath: "/work-portfolio",
-        clicks: 5,
-        recent: [
-          { at: "2026-07-20T01:00:00.000Z" },
-          { at: "2026-07-20T02:00:00.000Z" },
-        ],
-      },
-    });
-    renderWithClient(<ReferralLinksDemo feature={feature} />);
+    renderWithClient(
+      <ReferralLinksDemo feature={feature} />,
+      referralsService({ stats: vi.fn().mockResolvedValue(statsWith(5)) }),
+    );
     fireEvent.click(screen.getByRole("button", { name: /create link/i }));
 
     const stats = await screen.findByLabelText("Referral stats");
@@ -121,15 +125,6 @@ describe("referral links demo", () => {
   });
 
   it("shows an empty state when the link has no clicks yet", async () => {
-    mockApi({
-      created: CREATED,
-      stats: {
-        slug: "abc123",
-        targetPath: "/work-portfolio",
-        clicks: 0,
-        recent: [],
-      },
-    });
     renderWithClient(<ReferralLinksDemo feature={feature} />);
     fireEvent.click(screen.getByRole("button", { name: /create link/i }));
 

@@ -1,0 +1,31 @@
+/*
+ * Standalone dev only. Inside paul-explore the host supplies all of this; here
+ * we play host: design-system variables, component styles, and the handful of
+ * page-level rules the host's globals.css would normally set.
+ */
+@import "@paul-portfolio/tokens/tokens.css";
+@import "@paul-portfolio/css/components.css";
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+body {
+  background: var(--paul-color-background);
+  color: var(--paul-color-foreground);
+  font-family: ui-sans-serif, system-ui, sans-serif;
+}
+/* the host's Tailwind theme variables, which a few demos read directly */
+:root {
+  --color-background: var(--paul-color-background);
+  --color-foreground: var(--paul-color-foreground);
+  --color-surface: var(--paul-color-surface);
+  --color-border: var(--paul-color-border);
+  --color-muted: var(--paul-color-muted);
+  --color-primary-500: var(--paul-color-primary-500);
+  --color-secondary-500: var(--paul-color-secondary-500);
+  --color-error-600: var(--paul-color-error-600);
+  --color-feature-work-portfolio: var(--paul-color-primary-500);
+}

@@ -1,0 +1,37 @@
+name: Publish contract
+
+# The contract is the one package paul-explore installs from here. It
+# publishes from main with npm trusted publishing (OIDC, no token), and only
+# when its version isn't on the registry yet, so every other merge is a no-op.
+on:
+  push:
+    branches: [main]
+    paths: ["packages/contract/**"]
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @paul-portfolio/work-portfolio-contract build
+      - run: pnpm --filter @paul-portfolio/work-portfolio-contract test
+      - name: Publish if the version is new
+        working-directory: packages/contract
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "${NAME}@${VERSION}" version 2>/dev/null; then
+            echo "Skipping ${NAME}@${VERSION}, already published"
+          else
+            npm publish --access public --provenance
+          fi

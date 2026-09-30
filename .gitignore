@@ -1,0 +1,13 @@
+node_modules
+dist
+coverage
+test-results
+playwright-report
+.vercel
+*.tsbuildinfo
+.DS_Store
+.env
+.env.*
+!.env.example
+plans/
+harness-dist
